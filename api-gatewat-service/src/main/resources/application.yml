@@ -1,0 +1,67 @@
+server:
+ port: 9091
+ 
+spring:
+ application:
+  name: API-GATEWAY-SERVICE
+ cloud:
+    gateway:
+      routes:
+       - id: AUTH-SERVICE
+         uri: lb://AUTH-SERVICE
+         predicates:
+          - Path=/auth/**
+         filters:
+          - name: CircuitBreaker
+            args:
+             name: AUTH-SERVICE
+             fallbackuri: forward:/authservicefallback
+       - id: LOAN-SERVICE
+         uri: lb://LOAN-SERVICE
+         predicates:
+          - Path=/loan/**
+         filters:
+          - name: CircuitBreaker
+            args:
+             name: LOAN-SERVICE
+             fallbackuri: forward:/loanservicefallback
+         
+       
+
+    
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      AUTH-SERVICE:
+        registerHealthIndicator: true
+        eventConsumerBufferSize: 10
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+      LOAN-SERVICE:
+        registerHealthIndicator: true
+        eventConsumerBufferSize: 10
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 7
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+  
